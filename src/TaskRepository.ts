@@ -39,9 +39,12 @@ export class SheetsRepository implements ITaskRepository {
     return response.json();
   }
 
+  // Google Apps Script doesn't expose a PATCH handler directly. The backend
+  // interprets `?_method=patch` on a POST request as a signal to increment a
+  // task's SpentPom value
   async incrementPomodoro(taskId: string): Promise<void> {
-    const response = await fetch(this.baseUrl, {
-      method: 'PATCH',
+      const response = await fetch(`${this.baseUrl}?_method=patch`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8', // Apps Script quirk
       },
