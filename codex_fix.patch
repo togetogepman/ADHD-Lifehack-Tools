@@ -1,0 +1,415 @@
+diff --git a/src/components/PomodoroTimer.tsx b/src/components/PomodoroTimer.tsx
+index b1cfa51b369a4bae3669fec84765463813c89556..095f0a7f100db7d24807c71d10da88b7747019df 100644
+--- a/src/components/PomodoroTimer.tsx
++++ b/src/components/PomodoroTimer.tsx
+@@ -31,53 +31,59 @@ function PomodoroTimer() {
+     if (isActive && timeLeft > 0) {
+       interval = setInterval(() => {
+         setTimeLeft(prev => prev - 1);
+       }, 1000);
+     } else if (isActive && timeLeft === 0) {
+       handleTimerEnd();
+     }
+ 
+     return () => clearInterval(interval);
+   }, [isActive, timeLeft, handleTimerEnd]);
+   
+   useEffect(() => {
+     // Reset timer if active task is cleared or changed
+     if (!activeTask) {
+       setIsActive(false);
+       setMode('focus');
+       setTimeLeft(FOCUS_TIME);
+     }
+   }, [activeTask]);
+ 
+   const toggleTimer = () => {
+     if (!activeTask) {
+       alert("Please select a task to focus on from the list.");
+       return;
+     }
+-    // Request notification permission
+-    if (Notification.permission === 'default') {
+-      Notification.requestPermission();
++    // 通知権限が拒否されている場合はユーザーに知らせる
++    if (Notification.permission === 'denied') {
++      alert('通知がブロックされているため、タイマー終了時の通知は表示されません。');
++    } else if (Notification.permission === 'default') {
++      Notification.requestPermission().then(permission => {
++        if (permission === 'denied') {
++          alert('通知がブロックされたため、タイマー終了時の通知は表示されません。');
++        }
++      });
+     }
+     setIsActive(!isActive);
+   };
+ 
+   const formatTime = (seconds: number) => {
+     const mins = Math.floor(seconds / 60);
+     const secs = seconds % 60;
+     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+   };
+ 
+   return (
+     <div className="pomodoro-timer">
+       <h3>Pomodoro Timer</h3>
+       <div className="timer-display">{formatTime(timeLeft)}</div>
+       <div className="timer-mode">{mode === 'focus' ? 'Focus' : 'Break'}</div>
+       <div className="timer-controls">
+         <button onClick={toggleTimer} disabled={!activeTask}>
+           {isActive ? 'Pause' : 'Start'}
+         </button>
+       </div>
+       {activeTask && <p className="current-task">Task: {activeTask.Title}</p>}
+     </div>
+   );
+ }
+ 
+diff --git a/backend.gs.txt b/backend.gs.txt
+index b57d4b1ffb9d5266b3b051c64f77e8ffcb78f0fa..7e4c17bf0587757d9e8719c07dafb6c150f68eab 100644
+--- a/backend.gs.txt
++++ b/backend.gs.txt
+@@ -47,104 +47,89 @@ function doGet(e) {
+     const data = sheet.getDataRange().getValues();
+     const tasks = sheetDataToJSON(data);
+     
+     return ContentService
+       .createTextOutput(JSON.stringify(tasks))
+       .setMimeType(ContentService.MimeType.JSON);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+       .setMimeType(ContentService.MimeType.JSON)
+       .setStatusCode(500);
+   }
+ }
+ 
+ /**
+  * Handles POST requests to add a new task.
+  * @param {GoogleAppsScript.Events.DoPost} e The event parameter.
+  * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+  */
+ function doPost(e) {
+   try {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+     if (!sheet) {
+       throw new Error(`Sheet "${SHEET_NAME}" not found.`);
+     }
+-    
++
++    const method = (e.parameter.method || e.parameter._method || 'post').toLowerCase();
++
++    if (method === 'patch') {
++      const body = JSON.parse(e.postData.contents);
++      const taskId = body.taskId;
++
++      if (!taskId) {
++        throw new Error("taskId is required.");
++      }
++
++      const data = sheet.getDataRange().getValues();
++      const idColumnIndex = data[0].indexOf("ID");
++      const spentPomColumnIndex = data[0].indexOf("SpentPom");
++
++      if (idColumnIndex === -1 || spentPomColumnIndex === -1) {
++        throw new Error("Required columns (ID, SpentPom) not found in the sheet.");
++      }
++
++      let taskFound = false;
++      for (let i = 1; i < data.length; i++) {
++        if (data[i][idColumnIndex] === taskId) {
++          const currentSpentPom = parseInt(data[i][spentPomColumnIndex], 10) || 0;
++          sheet.getRange(i + 1, spentPomColumnIndex + 1).setValue(currentSpentPom + 1);
++          taskFound = true;
++          break;
++        }
++      }
++
++      if (!taskFound) {
++        throw new Error(`Task with ID "${taskId}" not found.`);
++      }
++
++      return ContentService
++        .createTextOutput(JSON.stringify({ success: true, message: "Pomodoro spent count incremented." }))
++        .setMimeType(ContentService.MimeType.JSON);
++    }
++
+     const taskData = JSON.parse(e.postData.contents);
+-    
++
+     const newTask = {
+       ID: generateUUID(),
+       Title: taskData.title,
+       DueISO: taskData.dueISO,
+       Priority: taskData.priority,
+       EstPom: parseInt(taskData.estPom, 10),
+       SpentPom: 0,
+       Status: 'todo'
+     };
+-    
++
+     sheet.appendRow(Object.values(newTask));
+-    
++
+     return ContentService
+       .createTextOutput(JSON.stringify(newTask))
+       .setMimeType(ContentService.MimeType.JSON)
+       .setStatusCode(201);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+       .setMimeType(ContentService.MimeType.JSON)
+       .setStatusCode(500);
+   }
+ }
+ 
+-/**
+- * Handles PATCH requests to increment a task's spent pomodoros.
+- * @param {GoogleAppsScript.Events.DoPost} e The event parameter.
+- * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+- */
+-function doPatch(e) {
+-  try {
+-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+-    if (!sheet) {
+-      throw new Error(`Sheet "${SHEET_NAME}" not found.`);
+-    }
+-    
+-    const body = JSON.parse(e.postData.contents);
+-    const taskId = body.taskId;
+-    
+-    if (!taskId) {
+-      throw new Error("taskId is required.");
+-    }
+-
+-    const data = sheet.getDataRange().getValues();
+-    const idColumnIndex = data[0].indexOf("ID");
+-    const spentPomColumnIndex = data[0].indexOf("SpentPom");
+-
+-    if (idColumnIndex === -1 || spentPomColumnIndex === -1) {
+-        throw new Error("Required columns (ID, SpentPom) not found in the sheet.");
+-    }
+-
+-    let taskFound = false;
+-    for (let i = 1; i < data.length; i++) {
+-      if (data[i][idColumnIndex] === taskId) {
+-        const currentSpentPom = parseInt(data[i][spentPomColumnIndex], 10) || 0;
+-        // The range is 1-based, columns are 1-based.
+-        sheet.getRange(i + 1, spentPomColumnIndex + 1).setValue(currentSpentPom + 1);
+-        taskFound = true;
+-        break;
+-      }
+-    }
+-
+-    if (!taskFound) {
+-      throw new Error(`Task with ID "${taskId}" not found.`);
+-    }
+-    
+-    return ContentService
+-      .createTextOutput(JSON.stringify({ success: true, message: "Pomodoro spent count incremented." }))
+-      .setMimeType(ContentService.MimeType.JSON);
+-  } catch (error) {
+-    return ContentService
+-      .createTextOutput(JSON.stringify({ error: error.message }))
+-      .setMimeType(ContentService.MimeType.JSON)
+-      .setStatusCode(500);
+-  }
+-}
+
+diff --git a/backend.gs.txt b/backend.gs.txt
+index b57d4b1ffb9d5266b3b051c64f77e8ffcb78f0fa..3fefdca92e0062a82f7caca129a4f424cc17e0f8 100644
+--- a/backend.gs.txt
++++ b/backend.gs.txt
+@@ -31,90 +31,87 @@ function sheetDataToJSON(data) {
+     jsonData.push(obj);
+   }
+   return jsonData;
+ }
+ 
+ /**
+  * Handles GET requests to fetch all tasks.
+  * @param {GoogleAppsScript.Events.DoGet} e The event parameter.
+  * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+  */
+ function doGet(e) {
+   try {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+     if (!sheet) {
+       throw new Error(`Sheet "${SHEET_NAME}" not found.`);
+     }
+     const data = sheet.getDataRange().getValues();
+     const tasks = sheetDataToJSON(data);
+     
+     return ContentService
+       .createTextOutput(JSON.stringify(tasks))
+       .setMimeType(ContentService.MimeType.JSON);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+-      .setMimeType(ContentService.MimeType.JSON)
+-      .setStatusCode(500);
++      .setMimeType(ContentService.MimeType.JSON);
+   }
+ }
+ 
+ /**
+  * Handles POST requests to add a new task.
+  * @param {GoogleAppsScript.Events.DoPost} e The event parameter.
+  * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+  */
+ function doPost(e) {
+   try {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+     if (!sheet) {
+       throw new Error(`Sheet "${SHEET_NAME}" not found.`);
+     }
+     
+     const taskData = JSON.parse(e.postData.contents);
+     
+     const newTask = {
+       ID: generateUUID(),
+       Title: taskData.title,
+       DueISO: taskData.dueISO,
+       Priority: taskData.priority,
+       EstPom: parseInt(taskData.estPom, 10),
+       SpentPom: 0,
+       Status: 'todo'
+     };
+     
+     sheet.appendRow(Object.values(newTask));
+     
+     return ContentService
+       .createTextOutput(JSON.stringify(newTask))
+-      .setMimeType(ContentService.MimeType.JSON)
+-      .setStatusCode(201);
++      .setMimeType(ContentService.MimeType.JSON);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+-      .setMimeType(ContentService.MimeType.JSON)
+-      .setStatusCode(500);
++      .setMimeType(ContentService.MimeType.JSON);
+   }
+ }
+ 
+ /**
+  * Handles PATCH requests to increment a task's spent pomodoros.
+  * @param {GoogleAppsScript.Events.DoPost} e The event parameter.
+  * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+  */
+ function doPatch(e) {
+   try {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+     if (!sheet) {
+       throw new Error(`Sheet "${SHEET_NAME}" not found.`);
+     }
+     
+     const body = JSON.parse(e.postData.contents);
+     const taskId = body.taskId;
+     
+     if (!taskId) {
+       throw new Error("taskId is required.");
+     }
+ 
+     const data = sheet.getDataRange().getValues();
+     const idColumnIndex = data[0].indexOf("ID");
+     const spentPomColumnIndex = data[0].indexOf("SpentPom");
+diff --git a/backend.gs.txt b/backend.gs.txt
+index b57d4b1ffb9d5266b3b051c64f77e8ffcb78f0fa..3fefdca92e0062a82f7caca129a4f424cc17e0f8 100644
+--- a/backend.gs.txt
++++ b/backend.gs.txt
+@@ -122,29 +119,28 @@ function doPatch(e) {
+     if (idColumnIndex === -1 || spentPomColumnIndex === -1) {
+         throw new Error("Required columns (ID, SpentPom) not found in the sheet.");
+     }
+ 
+     let taskFound = false;
+     for (let i = 1; i < data.length; i++) {
+       if (data[i][idColumnIndex] === taskId) {
+         const currentSpentPom = parseInt(data[i][spentPomColumnIndex], 10) || 0;
+         // The range is 1-based, columns are 1-based.
+         sheet.getRange(i + 1, spentPomColumnIndex + 1).setValue(currentSpentPom + 1);
+         taskFound = true;
+         break;
+       }
+     }
+ 
+     if (!taskFound) {
+       throw new Error(`Task with ID "${taskId}" not found.`);
+     }
+     
+     return ContentService
+       .createTextOutput(JSON.stringify({ success: true, message: "Pomodoro spent count incremented." }))
+       .setMimeType(ContentService.MimeType.JSON);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+-      .setMimeType(ContentService.MimeType.JSON)
+-      .setStatusCode(500);
++      .setMimeType(ContentService.MimeType.JSON);
+   }
+ }
+
+diff --git a/backend.gs.txt b/backend.gs.txt
+index b57d4b1ffb9d5266b3b051c64f77e8ffcb78f0fa..d47af9506e5eed968108e9ba5d3f4408d02bfb0b 100644
+--- a/backend.gs.txt
++++ b/backend.gs.txt
+@@ -52,54 +52,54 @@ function doGet(e) {
+       .setMimeType(ContentService.MimeType.JSON);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+       .setMimeType(ContentService.MimeType.JSON)
+       .setStatusCode(500);
+   }
+ }
+ 
+ /**
+  * Handles POST requests to add a new task.
+  * @param {GoogleAppsScript.Events.DoPost} e The event parameter.
+  * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+  */
+ function doPost(e) {
+   try {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+     if (!sheet) {
+       throw new Error(`Sheet "${SHEET_NAME}" not found.`);
+     }
+     
+     const taskData = JSON.parse(e.postData.contents);
+     
+     const newTask = {
+       ID: generateUUID(),
+-      Title: taskData.title,
+-      DueISO: taskData.dueISO,
+-      Priority: taskData.priority,
+-      EstPom: parseInt(taskData.estPom, 10),
++      Title: taskData.Title,
++      DueISO: taskData.DueISO,
++      Priority: taskData.Priority,
++      EstPom: parseInt(taskData.EstPom, 10),
+       SpentPom: 0,
+       Status: 'todo'
+     };
+     
+     sheet.appendRow(Object.values(newTask));
+     
+     return ContentService
+       .createTextOutput(JSON.stringify(newTask))
+       .setMimeType(ContentService.MimeType.JSON)
+       .setStatusCode(201);
+   } catch (error) {
+     return ContentService
+       .createTextOutput(JSON.stringify({ error: error.message }))
+       .setMimeType(ContentService.MimeType.JSON)
+       .setStatusCode(500);
+   }
+ }
+ 
+ /**
+  * Handles PATCH requests to increment a task's spent pomodoros.
+  * @param {GoogleAppsScript.Events.DoPost} e The event parameter.
+  * @returns {GoogleAppsScript.Content.TextOutput} JSON response.
+  */
+ function doPatch(e) {
+   try {

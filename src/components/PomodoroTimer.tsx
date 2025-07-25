@@ -53,9 +53,15 @@ function PomodoroTimer() {
       alert("Please select a task to focus on from the list.");
       return;
     }
-    // Request notification permission
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
+    // 通知権限が拒否されている場合はユーザーに知らせる
+    if (Notification.permission === 'denied') {
+      alert('通知がブロックされているため、タイマー終了時の通知は表示されません。');
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'denied') {
+          alert('通知がブロックされたため、タイマー終了時の通知は表示されません。');
+        }
+      });
     }
     setIsActive(!isActive);
   };
