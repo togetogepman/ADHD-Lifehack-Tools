@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import { useTaskStore } from '../store';
 
 const FOCUS_TIME = 25 * 60; // 25 minutes
