@@ -3,3 +3,4 @@ node_modules
 codex_fix.patch
 prompt.txt
 backend.gs.txt
+dist
