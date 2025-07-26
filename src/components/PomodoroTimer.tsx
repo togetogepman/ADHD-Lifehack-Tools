@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useTaskStore } from '../store';
 
 const FOCUS_TIME = 25 * 60; // 25 minutes
@@ -29,7 +30,7 @@ function PomodoroTimer() {
 
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft((prev: number) => prev - 1);
       }, 1000);
     } else if (isActive && timeLeft === 0) {
       handleTimerEnd();
