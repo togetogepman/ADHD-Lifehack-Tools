@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>タスク分解支援（安定版）</title>
+</head>
+<body>
+  <h2>タスク分解ミニアプリ（Transformers.js v2.5.1）</h2>
+  <input id="taskInput" size="60" placeholder="例: ゼミ発表の準備をする" />
+  <button id="runButton">分解する</button>
+  <div id="results" style="margin-top: 1em;"></div>
+
+  <script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.1';
+
+    env.localModelPath = null;
+    env.useBrowserCache = false;
+
+    const classifier = await pipeline(
+     'zero-shot-classification',
+     'Xenova/nli-deberta-v3-xsmall'
+    );
+
+    function generateStepsByCategory(label) {
+      switch (label) {
+        case '発表準備':
+          return ['資料を探す', '構成を考える', 'スライドを作る', 'リハーサル'];
+        case 'レポート作成':
+          return ['テーマを決める', '参考文献を探す', '下書き', '清書して提出'];
+        case '試験対策':
+          return ['出題範囲を確認', 'ノートを見直す', '問題を解く', '弱点を復習'];
+        case '日常タスク':
+          return ['ToDoをリストアップ', '時間を見積もる', '優先度順に実行'];
+        default:
+          return ['やることを明確にする', '必要な準備を洗い出す', '期限を確認する'];
+      }
+    }
+
+    document.getElementById('runButton').addEventListener('click', async () => {
+      const input = document.getElementById('taskInput').value;
+      const labels = ['発表準備', 'レポート作成', '試験対策', '日常タスク', '未分類'];
+
+      const result = await classifier(input, labels);
+      const top = result[0];
+      const steps = generateStepsByCategory(top.label);
+
+      document.getElementById('results').innerHTML = `
+        <b>カテゴリ:</b> ${top.label} (${(top.score * 100).toFixed(1)}%)<br>
+        <b>分解されたタスク:</b>
+        <ul>${steps.map(s => `<li>${s}</li>`).join('')}</ul>
+      `;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!-- sample1.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ポモドーロログ - カード形式</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <h1 class="text-2xl font-bold mb-4">ポモドーロ達成ログ</h1>
+  <div id="log" class="space-y-4"></div>
+  <button onclick="addLog()" class="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+    ポモドーロ追加
+  </button>
+
+  <script>
+    function addLog() {
+      const container = document.getElementById("log");
+      const card = document.createElement("div");
+      const now = new Date().toLocaleString();
+      card.className = "bg-white p-4 rounded shadow";
+      card.innerHTML = `<strong>✅ ${now}</strong><p>集中セッションを完了しました。</p>`;
+      container.prepend(card);
+    }
+  </script>
+</body>
+</html>

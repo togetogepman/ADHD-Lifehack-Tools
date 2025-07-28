@@ -1,0 +1,64 @@
+<!-- sample3.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ポモドーロ達成リング</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex flex-col items-center p-10">
+  <h1 class="text-xl font-bold mb-4">今日の達成度</h1>
+  <canvas id="ring" width="200" height="200"></canvas>
+  <div class="mt-4 flex items-center gap-4">
+    <button onclick="addPom()" class="px-4 py-2 bg-green-500 text-white rounded">+1 ポモドーロ</button>
+    <button onclick="reset()" class="px-4 py-2 bg-red-500 text-white rounded">リセット</button>
+  </div>
+
+  <script>
+    let current = 0;
+    const goal = 8;
+
+    function drawRing() {
+      const ctx = document.getElementById("ring").getContext("2d");
+      ctx.clearRect(0, 0, 200, 200);
+
+      const percent = current / goal;
+      const start = -0.5 * Math.PI;
+      const end = start + percent * 2 * Math.PI;
+
+      // 背景リング
+      ctx.beginPath();
+      ctx.arc(100, 100, 80, 0, 2 * Math.PI);
+      ctx.strokeStyle = "#ddd";
+      ctx.lineWidth = 20;
+      ctx.stroke();
+
+      // 進捗リング
+      ctx.beginPath();
+      ctx.arc(100, 100, 80, start, end);
+      ctx.strokeStyle = "#10b981"; // emerald-500
+      ctx.lineWidth = 20;
+      ctx.stroke();
+
+      // テキスト
+      ctx.fillStyle = "#111";
+      ctx.font = "24px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${current}/${goal}`, 100, 100);
+    }
+
+    function addPom() {
+      if (current < goal) current++;
+      drawRing();
+    }
+
+    function reset() {
+      current = 0;
+      drawRing();
+    }
+
+    drawRing();
+  </script>
+</body>
+</html>

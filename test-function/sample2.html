@@ -1,0 +1,28 @@
+<!-- sample2.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ポモドーロ宝石コレクション</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex flex-col items-center p-8">
+  <h1 class="text-2xl font-semibold mb-4">ポモドーロの宝石を集めよう！</h1>
+  <div id="gems" class="flex flex-wrap gap-2 mb-4"></div>
+  <button onclick="addGem()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+    ポモドーロ追加
+  </button>
+
+  <script>
+    let gemCount = 0;
+    function addGem() {
+      const gem = document.createElement("div");
+      gem.className = `w-8 h-8 rounded-full ${
+        (gemCount + 1) % 5 === 0 ? 'bg-yellow-400' : 'bg-purple-400'
+      } shadow-md`;
+      document.getElementById("gems").appendChild(gem);
+      gemCount++;
+    }
+  </script>
+</body>
+</html>
