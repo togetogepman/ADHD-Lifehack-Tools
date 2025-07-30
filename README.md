@@ -12,7 +12,8 @@
 
 1. リポジトリをクローンします。
 2. `pnpm install` を実行して依存パッケージをインストールします。（`npm install` でも構いません）
-3. `.env.local` に `VITE_API_BASE` を設定し、Google Apps Script で公開した API の URL を指定します。
+3. `.env.local.example` を `.env.local` にコピーします。
+4. `.env.local` 内で `VITE_API_BASE` を Google Apps Script で公開した API の URL に設定します。
 
 ## 開発用サーバーの起動
 
@@ -34,9 +35,9 @@ pnpm run build
 
 ビルドして生成されたファイルを任意の静的ホスティングサービスに配置することでデプロイできます。Google Apps Script 側の API がアクセス可能であれば動作します。
 
-## 使い方
+`pnpm run deploy` を実行すると、ビルド済みの `dist` フォルダを `gh-pages` ブランチに公開し、GitHub Pages からアクセスできるようになります。GitHub リポジトリの **Pages** 設定で公開ブランチを `gh-pages` に指定してください。リポジトリ名に合わせて `vite.config.ts` の `base` オプションも調整可能です。
 
-https://togetogepman.github.io/ADHD-Lifehack-Tools/
+## 使い方
 
 1. タスクを入力して追加すると、一覧に表示されます。
 2. Pomodoro タイマーを開始すると、指定した時間集中して作業を行います。タイマーが終了したら、ポモドーロ数が自動でカウントアップされます。

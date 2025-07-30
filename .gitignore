@@ -4,3 +4,4 @@ codex_fix.patch
 prompt.txt
 backend.gs.txt
 dist
+.env.local
