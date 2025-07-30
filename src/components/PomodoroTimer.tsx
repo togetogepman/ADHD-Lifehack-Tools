@@ -78,7 +78,7 @@ function PomodoroTimer() {
       <div className="timer-display">{formatTime(timeLeft)}</div>
       <div className="timer-mode">{mode === 'focus' ? 'Focus' : 'Break'}</div>
       <div className="timer-controls">
-        <button onClick={toggleTimer} disabled={!activeTask}>
+        <button onClick={toggleTimer} disabled={!activeTask} className="start-button">
           {isActive ? 'Pause' : 'Start'}
         </button>
       </div>

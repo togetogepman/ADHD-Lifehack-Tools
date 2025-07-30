@@ -56,20 +56,37 @@ main {
   overflow-y: auto;
 }
 
+/* ===== ✅ 改善されたボタンスタイル ===== */
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: background-color 0.2s, border-color 0.2s;
 }
-button:hover {
-  border-color: #646cff;
+
+/* 強調ボタン（Startなど） */
+.start-button {
+  background-color: #00b894;
+  color: white;
+  border: none;
 }
+.start-button:hover {
+  background-color: #00d29b;
+}
+
+/* 一般ボタン（Add Taskなど） */
+.secondary-button {
+  background-color: #2d3436;
+  color: white;
+  border: none;
+}
+.secondary-button:hover {
+  background-color: #3c4648;
+}
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
