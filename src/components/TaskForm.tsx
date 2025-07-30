@@ -1,46 +1,63 @@
+import React, { useState } from 'react';
 import { useTaskStore } from '../store';
-import { Task } from '../types';
+import { NewTask } from '../types';
 
-function TaskList() {
-  const { tasks, setActiveTask, activeTask } = useTaskStore();
+function TaskForm() {
+  const addTask = useTaskStore(state => state.addTask);
+  const [title, setTitle] = useState('');
+  const [dueISO, setDueISO] = useState('');
+  const [priority, setPriority] = useState<'H' | 'M' | 'L'>('M');
+  const [estPom, setEstPom] = useState(1);
 
-  const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleString();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !dueISO) {
+      alert('Please fill in Title and Due Date.');
+      return;
+    }
+    const newTask: NewTask = {
+      Title: title,
+      DueISO: new Date(dueISO).toISOString(),
+      Priority: priority,
+      EstPom: estPom,
+    };
+    addTask(newTask);
+    // Reset form
+    setTitle('');
+    setDueISO('');
+    setPriority('M');
+    setEstPom(1);
   };
 
   return (
-    <div className="task-list">
-      <h3>My Tasks</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Pomodoros</th>
-            <th>Due Date</th>
-            <th>Priority</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task: Task) => (
-            <tr key={task.ID} className={activeTask?.ID === task.ID ? 'active' : ''}>
-              <td>{task.Title}</td>
-              <td>{task.SpentPom} / {task.EstPom}</td>
-              <td>{formatDate(task.DueISO)}</td>
-              <td>
-                <span className={`priority-badge priority-${task.Priority}`}>{task.Priority}</span>
-              </td>
-              <td>
-                <button onClick={() => setActiveTask(task)} className="secondary-button">
-                  Focus
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <form onSubmit={handleSubmit} className="task-form">
+      <h3>Add New Task</h3>
+      <input
+        type="text"
+        placeholder="Task Title"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        required
+      />
+      <input
+        type="datetime-local"
+        value={dueISO}
+        onChange={e => setDueISO(e.target.value)}
+        required
+      />
+      <div className="radio-group">
+        <label><input type="radio" value="H" checked={priority === 'H'} onChange={() => setPriority('H')} /> High</label>
+        <label><input type="radio" value="M" checked={priority === 'M'} onChange={() => setPriority('M')} /> Medium</label>
+        <label><input type="radio" value="L" checked={priority === 'L'} onChange={() => setPriority('L')} /> Low</label>
+      </div>
+      <select value={estPom} onChange={e => setEstPom(Number(e.target.value))}>
+        {[...Array(8)].map((_, i) => (
+          <option key={i + 1} value={i + 1}>{i + 1} Pomodoro(s)</option>
+        ))}
+      </select>
+      <button type="submit" className="secondary-button">Add Task</button>
+    </form>
   );
 }
 
-export default TaskList;
+export default TaskForm;
