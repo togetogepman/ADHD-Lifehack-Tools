@@ -185,17 +185,22 @@ input, select {
   color: #ff6b6b;
 }
 
-/* ---- TaskForm UI tweaks ---- */
+/* ---- overwrite: label & input on one line ---- */
 .input-label {
   display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
-  text-align: left;
+  flex-direction: row;     /* ← column→row */
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.input-label input,
+.input-label select {
+  flex: 1;                 /* 入力欄を残り幅いっぱいに */
 }
 
 .input-label .required {
-  color: #ff6b6b;
-  margin-left: 4px;
+  display: none;           /* ＊マークを非表示に */
 }
 
 .details-group {
