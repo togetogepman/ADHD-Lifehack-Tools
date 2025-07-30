@@ -12,7 +12,7 @@ function TaskForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !dueISO) {
-      alert('Please fill in Title and Due Date.');
+      alert('Please fill in Task Title and Deadline.');
       return;
     }
     const newTask: NewTask = {
@@ -22,6 +22,7 @@ function TaskForm() {
       EstPom: estPom,
     };
     addTask(newTask);
+
     // Reset form
     setTitle('');
     setDueISO('');
@@ -32,30 +33,82 @@ function TaskForm() {
   return (
     <form onSubmit={handleSubmit} className="task-form">
       <h3>Add New Task</h3>
-      <input
-        type="text"
-        placeholder="Task Title"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        required
-      />
-      <input
-        type="datetime-local"
-        value={dueISO}
-        onChange={e => setDueISO(e.target.value)}
-        required
-      />
-      <div className="radio-group">
-        <label><input type="radio" value="H" checked={priority === 'H'} onChange={() => setPriority('H')} /> High</label>
-        <label><input type="radio" value="M" checked={priority === 'M'} onChange={() => setPriority('M')} /> Medium</label>
-        <label><input type="radio" value="L" checked={priority === 'L'} onChange={() => setPriority('L')} /> Low</label>
-      </div>
-      <select value={estPom} onChange={e => setEstPom(Number(e.target.value))}>
-        {[...Array(8)].map((_, i) => (
-          <option key={i + 1} value={i + 1}>{i + 1} Pomodoro(s)</option>
-        ))}
-      </select>
-      <button type="submit" className="secondary-button">Add Task</button>
+
+      {/* Task title */}
+      <label className="input-label">
+        Task title<span className="required">*</span>
+        <input
+          type="text"
+          placeholder="e.g. Budget report"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          required
+        />
+      </label>
+
+      {/* Deadline */}
+      <label className="input-label">
+        Deadline<span className="required">*</span>
+        <input
+          type="datetime-local"
+          value={dueISO}
+          onChange={e => setDueISO(e.target.value)}
+          required
+        />
+      </label>
+
+      {/* Details group */}
+      <fieldset className="details-group">
+        <legend>Task details</legend>
+
+        {/* Priority */}
+        <div className="radio-group">
+          <span className="group-label">Priority:</span>
+          <label>
+            <input
+              type="radio"
+              value="H"
+              checked={priority === 'H'}
+              onChange={() => setPriority('H')}
+            />
+            <span className="priority-badge priority-H">High</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="M"
+              checked={priority === 'M'}
+              onChange={() => setPriority('M')}
+            />
+            <span className="priority-badge priority-M">Medium</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="L"
+              checked={priority === 'L'}
+              onChange={() => setPriority('L')}
+            />
+            <span className="priority-badge priority-L">Low</span>
+          </label>
+        </div>
+
+        {/* Estimated Pomodoros */}
+        <label className="input-label">
+          Estimate&nbsp;(Pomodoros)
+          <select value={estPom} onChange={e => setEstPom(Number(e.target.value))}>
+            {[...Array(8)].map((_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+        </label>
+      </fieldset>
+
+      <button type="submit" className="secondary-button">
+        Add Task
+      </button>
     </form>
   );
 }
